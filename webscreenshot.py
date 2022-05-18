@@ -61,6 +61,7 @@ main_grp.add_argument('-o', '--output-directory', help = '<OUTPUT_DIRECTORY> (op
 main_grp.add_argument('-w', '--workers', help = '<WORKERS> (optional): number of parallel execution workers (default 4)', default = 4)
 main_grp.add_argument('-v', '--verbosity', help = '<VERBOSITY> (optional): verbosity level, repeat it to increase the level { -v INFO, -vv DEBUG } (default verbosity ERROR)', action = 'count', default = 0)
 main_grp.add_argument('--no-error-file', help = '<NO_ERROR_FILE> (optional): do not write a file with the list of URL of failed screenshots (default false)', action = 'store_true', default = False)
+main_grp.add_argument('--no-index-file', help = '<NO_INDEX_FILE> (optional): do not write a file with the list of URL of successful screenshots (default false)', action = 'store_true', default = False)
 main_grp.add_argument('-z', '--single-output-file', help = '<SINGLE_OUTPUT_FILE> (optional): name of a file which will be the single output of all inputs. Ex. test.png')
 
 proc_grp = parser.add_argument_group('Input processing parameters')
@@ -243,6 +244,10 @@ def shell_exec(url, command, options, context):
         else:
             logger_url.debug("Shell command PID %s ended normally" % p.pid)
             logger_url.info("Screenshot OK\n")
+            if not options.no_index_file:
+                with open(os.path.join(options.output_directory, 'index'), 'a') as index_file:
+                    absolute_cwd = os.path.abspath(os_getcwd())
+                    index_file.write(f'{os.path.relpath(options.output_filename, absolute_cwd)} {url}\n')
             return SHELL_EXECUTION_OK
     
     except OSError as e:
@@ -467,6 +472,7 @@ def craft_cmd(url_and_options):
     logger_url.setLevel(options.log_level)
     
     output_format, output_filename = craft_output_filename_and_format(url, options)
+    options.output_filename = output_filename
         
     # PhantomJS renderer
     if options.renderer == 'phantomjs':
@@ -638,6 +644,11 @@ def main():
     
     url_list = parse_targets(options)
     
+    # clear the index file
+    if not options.no_index_file:
+        with open(os.path.join(options.output_directory, 'index'), 'w') as index_file:
+            index_file.truncate(0)
+
     take_screenshot(url_list, options)
     
     return None
