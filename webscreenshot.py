@@ -644,11 +644,6 @@ def main():
     
     url_list = parse_targets(options)
     
-    # clear the index file
-    if not options.no_index_file:
-        with open(os.path.join(options.output_directory, 'index'), 'w') as index_file:
-            index_file.truncate(0)
-
     take_screenshot(url_list, options)
     
     return None
